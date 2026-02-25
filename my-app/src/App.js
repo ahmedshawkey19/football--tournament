@@ -1,24 +1,52 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { auth, db } from './firebase'; 
+import { doc, getDoc } from 'firebase/firestore';
+import Register from './components/Register';
+import Login from './components/Login';
+
 
 function App() {
+  const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+   useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setUserRole(docSnap.data().role);
+        }
+      } else {
+        setUserRole(null);
+      }
+      setLoading(false);
+    });
+     return () => unsubscribe();
+  }, []);
+
+  
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
+  }
   return (
+    <Router>
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Routes>
+        <Route 
+          path="/" 
+          element={userRole ? <Navigate to="/dashboard" /> : <Login />} 
+        /> 
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        <Route 
+          path="/dashboard" 
+          element={userRole ? <div>Hi!</div> : <Navigate to="/login" />} 
+        />
+      </Routes>
     </div>
+  </Router>
   );
 }
 
