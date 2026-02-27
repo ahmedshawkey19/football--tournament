@@ -11,17 +11,33 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState('');
 
-  const handleLogin = async () => {
-    
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
    
     try{
-        await signInWithEmailAndPassword(auth , email ,password);
-        alert("succes");
-    }catch(error){
-        alert(error.message);
-    }
-    
+        const userSinIn = await signInWithEmailAndPassword(auth , email ,password);
+        const user=userSinIn.user;
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+       
 
+       if (!userDoc.exists()) {
+          setError("User data not found in database");
+          return;
+        }
+
+         const userData = userDoc.data();
+
+      if (userData.role == "admin") {
+        navigate("/admin");
+      } else if (userData.role == "student") {
+        navigate("/student");
+      } else {
+        setError("Unknown role");
+      }
+    }catch(error){
+        setError(error.message);
+    }
   };
 
   return (
@@ -29,7 +45,7 @@ function Login() {
     <div style={{ padding: "280px", textAlign: "center", maxWidth: "1100px", margin: "auto",backgroundImage: `url(${back})`,backgroundSize: "cover" }}>
       
       <h2 >logIn</h2>
-      <form onSubmit={handleLogin} >
+      <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <input 
           type="email" 
           placeholder="Email" 
