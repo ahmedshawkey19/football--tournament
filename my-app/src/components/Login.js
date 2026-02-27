@@ -1,14 +1,15 @@
 import { auth, db } from "../firebase"; 
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs} from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
 import back from './back.jpg';
 
 function Login() {
   const navigate = useNavigate(); 
-  const [email, setEmail] = useState("");
+  //const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [studentCode, setStudentCode] = useState("");
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
@@ -16,17 +17,18 @@ function Login() {
     setError('');
    
     try{
-        const userSinIn = await signInWithEmailAndPassword(auth , email ,password);
-        const user=userSinIn.user;
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-       
+      
+      const q = query(collection(db, "users"), where("studentCode", "==", studentCode));
+      const querySnapshot = await getDocs(q);
 
-       if (!userDoc.exists()) {
-          setError("User data not found in database");
-          return;
-        }
+      if (querySnapshot.empty) {
+        setError("Student code not found");
+        return;
+      }
 
-         const userData = userDoc.data();
+      const userData = querySnapshot.docs[0].data();
+       const email = userData.email;
+      const userSignIn = await signInWithEmailAndPassword(auth, email, password);
 
       if (userData.role == "admin") {
         navigate("/admin");
@@ -47,10 +49,10 @@ function Login() {
       <h2 >logIn</h2>
       <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <input 
-          type="email" 
-          placeholder="Email" 
+          type="text" 
+          placeholder="id" 
           style={{ width: '35%', padding: '10px', marginBottom: '10px' }}
-          onChange={(e) => setEmail(e.target.value)} 
+          onChange={(e) => setStudentCode(e.target.value)} 
           required 
         />
         <input 
